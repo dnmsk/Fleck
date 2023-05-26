@@ -3,7 +3,6 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -14,10 +13,10 @@ namespace Fleck
 {
     public class SocketWrapper : ISocket
     {
-    
+
         public const UInt32 KeepAliveInterval = 60000;
         public const UInt32 RetryInterval = 10000;
-    
+
         private readonly Socket _socket;
         private Stream _stream;
         private CancellationTokenSource _tokenSource;
@@ -76,7 +75,7 @@ namespace Fleck
             Func<AsyncCallback, object, IAsyncResult> begin =
                 (cb, s) => ssl.BeginAuthenticateAsServer(certificate, false, enabledSslProtocols, false, cb, s);
 
-            Task task = Task.Factory.FromAsync(begin, ssl.EndAuthenticateAsServer, null);
+            Task task = _taskFactory.FromAsync(begin, ssl.EndAuthenticateAsServer, null);
             task.ContinueWith(t => callback(), TaskContinuationOptions.NotOnFaulted)
                 .ContinueWith(t => error(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
             task.ContinueWith(t => error(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
@@ -122,7 +121,7 @@ namespace Fleck
                 Func<AsyncCallback, object, IAsyncResult> begin =
                (cb, s) => _stream.BeginRead(buffer, offset, buffer.Length, cb, s);
 
-                Task<int> task = Task.Factory.FromAsync<int>(begin, _stream.EndRead, null);
+                Task<int> task = _taskFactory.FromAsync<int>(begin, _stream.EndRead, null);
                 task.ContinueWith(t => callback(t.Result), TaskContinuationOptions.NotOnFaulted)
                     .ContinueWith(t => error(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
                 task.ContinueWith(t => error(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
@@ -175,7 +174,28 @@ namespace Fleck
                 Func<AsyncCallback, object, IAsyncResult> begin =
                     (cb, s) => _stream.BeginWrite(buffer, 0, buffer.Length, cb, s);
 
-                Task task = Task.Factory.FromAsync(begin, _stream.EndWrite, null);
+                Task task = _taskFactory.FromAsync(begin, _stream.EndWrite, null);
+                task.ContinueWith(t => callback(), TaskContinuationOptions.NotOnFaulted)
+                    .ContinueWith(t => error(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+                task.ContinueWith(t => error(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+
+                return task;
+            }
+            catch (Exception e)
+            {
+                error(e);
+                return null;
+            }
+        }
+
+        public Task Send(Stream stream, Action callback, Action<Exception> error)
+        {
+            if (_tokenSource.IsCancellationRequested)
+                return null;
+
+            try
+            {
+                Task task = stream.CopyToAsync(_stream);
                 task.ContinueWith(t => callback(), TaskContinuationOptions.NotOnFaulted)
                     .ContinueWith(t => error(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
                 task.ContinueWith(t => error(t.Exception), TaskContinuationOptions.OnlyOnFaulted);

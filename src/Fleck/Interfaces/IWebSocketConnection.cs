@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Fleck
@@ -14,6 +15,9 @@ namespace Fleck
         Action<Exception> OnError { get; set; }
         Task Send(string message);
         Task Send(byte[] message);
+        Task SendTextAsByte(byte[] message);
+        Task SendStreamText(Stream stream);
+        Task SendStreamBytes(Stream stream);
         Task SendPing(byte[] message);
         Task SendPong(byte[] message);
         void Close();

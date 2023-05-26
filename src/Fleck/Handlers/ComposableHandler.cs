@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Fleck.Handlers
 {
@@ -7,12 +8,15 @@ namespace Fleck.Handlers
     {
         public Func<string, byte[]> Handshake = s => new byte[0];
         public Func<string, byte[]> TextFrame = x => new byte[0];
+        public Func<byte[], byte[]> ByteTextFrame = x => new byte[0];
+        public Func<Stream, Stream> FrameStreamTextFrame = x => x;
+        public Func<Stream, Stream> FrameStreamBytesFrame = x => x;
         public Func<byte[], byte[]> BinaryFrame = x => new byte[0];
         public Action<List<byte>> ReceiveData = delegate { };
         public Func<byte[], byte[]> PingFrame = i => new byte[0];
         public Func<byte[], byte[]> PongFrame = i => new byte[0];
         public Func<int, byte[]> CloseFrame = i => new byte[0];
-        
+
         private readonly List<byte> _data = new List<byte>();
 
         public byte[] CreateHandshake(string subProtocol = null)
@@ -23,34 +27,48 @@ namespace Fleck.Handlers
         public void Receive(IEnumerable<byte> data)
         {
             _data.AddRange(data);
-            
+
             ReceiveData(_data);
         }
-        
+
+        public Stream FrameStreamText(Stream stream)
+        {
+            return FrameStreamTextFrame(stream);
+        }
+
+        public Stream FrameStreamBytes(Stream bytes)
+        {
+            return FrameStreamBytesFrame(bytes);
+        }
+
         public byte[] FrameText(string text)
         {
             return TextFrame(text);
         }
-        
+
+        public byte[] FrameByteText(byte[] bytes)
+        {
+            return ByteTextFrame(bytes);
+        }
+
         public byte[] FrameBinary(byte[] bytes)
         {
             return BinaryFrame(bytes);
         }
-        
+
         public byte[] FramePing(byte[] bytes)
         {
             return PingFrame(bytes);
         }
-        
+
         public byte[] FramePong(byte[] bytes)
         {
             return PongFrame(bytes);
         }
-        
+
         public byte[] FrameClose(int code)
         {
             return CloseFrame(code);
         }
     }
 }
-

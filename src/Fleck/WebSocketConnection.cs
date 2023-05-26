@@ -57,9 +57,24 @@ namespace Fleck
       get { return !_closing && !_closed && Socket.Connected; }
     }
 
+    public Task SendStreamText(Stream stream)
+    {
+      return Send(stream, Handler.FrameStreamText);
+    }
+
+    public Task SendStreamBytes(Stream stream)
+    {
+      return Send(stream, Handler.FrameStreamBytes);
+    }
+
     public Task Send(string message)
     {
       return Send(message, Handler.FrameText);
+    }
+
+    public Task SendTextAsByte(byte[] message)
+    {
+      return Send(message, Handler.FrameByteText);
     }
 
     public Task Send(byte[] message)
@@ -86,7 +101,7 @@ namespace Fleck
       {
           const string errorMessage = "Data sent while closing or after close. Ignoring.";
           FleckLog.Warn(errorMessage);
-          
+
           var taskForException = new TaskCompletionSource<object>();
           taskForException.SetException(new ConnectionNotAvailableException(errorMessage));
           return taskForException.Task;
@@ -94,6 +109,25 @@ namespace Fleck
 
       var bytes = createFrame(message);
       return SendBytes(bytes);
+    }
+
+    private Task Send<T>(T message, Func<T, Stream> createFrame)
+    {
+      if (Handler == null)
+        throw new InvalidOperationException("Cannot send before handshake");
+
+      if (!IsAvailable)
+      {
+          const string errorMessage = "Data sent while closing or after close. Ignoring.";
+          FleckLog.Warn(errorMessage);
+
+          var taskForException = new TaskCompletionSource<object>();
+          taskForException.SetException(new ConnectionNotAvailableException(errorMessage));
+          return taskForException.Task;
+      }
+
+      var bytes = createFrame(message);
+      return SendStream(bytes);
     }
 
     public void StartReceiving()
@@ -184,7 +218,7 @@ namespace Fleck
       }
 
       OnError(e);
-            
+
       if (e is WebSocketException) {
         FleckLog.Debug("Error while reading", e);
         Close(((WebSocketException)e).StatusCode);
@@ -203,19 +237,37 @@ namespace Fleck
     private Task SendBytes(byte[] bytes, Action callback = null)
     {
       return Socket.Send(bytes, () =>
-      {
-        FleckLog.Debug("Sent " + bytes.Length + " bytes");
-        if (callback != null)
-          callback();
-      },
-                        e =>
-      {
-        if (e is IOException)
-          FleckLog.Debug("Failed to send. Disconnecting.", e);
-        else
-          FleckLog.Info("Failed to send. Disconnecting.", e);
-        CloseSocket();
-      });
+        {
+          FleckLog.Debug("Sent " + bytes.Length + " bytes");
+          if (callback != null)
+            callback();
+        },
+        e =>
+        {
+          if (e is IOException)
+            FleckLog.Debug("Failed to send. Disconnecting.", e);
+          else
+            FleckLog.Info("Failed to send. Disconnecting.", e);
+          CloseSocket();
+        });
+    }
+
+    private Task SendStream(Stream stream, Action callback = null)
+    {
+      return Socket.Send(stream, () =>
+        {
+          FleckLog.Debug("Sent " + stream.Length + " bytes");
+          if (callback != null)
+            callback();
+        },
+        e =>
+        {
+          if (e is IOException)
+            FleckLog.Debug("Failed to send. Disconnecting.", e);
+          else
+            FleckLog.Info("Failed to send. Disconnecting.", e);
+          CloseSocket();
+        });
     }
 
     private void CloseSocket()
