@@ -57,12 +57,12 @@ namespace Fleck
       get { return !_closing && !_closed && Socket.Connected; }
     }
 
-    public Task SendStreamText(Stream stream)
+    public Task SendStreamText(MemoryStream stream)
     {
       return Send(stream, Handler.FrameStreamText);
     }
 
-    public Task SendStreamBytes(Stream stream)
+    public Task SendStreamBytes(MemoryStream stream)
     {
       return Send(stream, Handler.FrameStreamBytes);
     }

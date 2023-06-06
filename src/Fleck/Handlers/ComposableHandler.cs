@@ -9,8 +9,8 @@ namespace Fleck.Handlers
         public Func<string, byte[]> Handshake = s => new byte[0];
         public Func<string, byte[]> TextFrame = x => new byte[0];
         public Func<byte[], byte[]> ByteTextFrame = x => new byte[0];
-        public Func<Stream, Stream> FrameStreamTextFrame = x => x;
-        public Func<Stream, Stream> FrameStreamBytesFrame = x => x;
+        public Func<MemoryStream, MemoryStream> FrameStreamTextFrame = x => x;
+        public Func<MemoryStream, MemoryStream> FrameStreamBytesFrame = x => x;
         public Func<byte[], byte[]> BinaryFrame = x => new byte[0];
         public Action<List<byte>> ReceiveData = delegate { };
         public Func<byte[], byte[]> PingFrame = i => new byte[0];
@@ -31,12 +31,12 @@ namespace Fleck.Handlers
             ReceiveData(_data);
         }
 
-        public Stream FrameStreamText(Stream stream)
+        public MemoryStream FrameStreamText(MemoryStream stream)
         {
             return FrameStreamTextFrame(stream);
         }
 
-        public Stream FrameStreamBytes(Stream bytes)
+        public MemoryStream FrameStreamBytes(MemoryStream bytes)
         {
             return FrameStreamBytesFrame(bytes);
         }

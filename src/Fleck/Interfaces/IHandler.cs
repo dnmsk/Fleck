@@ -7,8 +7,8 @@ namespace Fleck
     {
         byte[] CreateHandshake(string subProtocol = null);
         void Receive(IEnumerable<byte> data);
-        Stream FrameStreamText(Stream stream);
-        Stream FrameStreamBytes(Stream bytes);
+        MemoryStream FrameStreamText(MemoryStream stream);
+        MemoryStream FrameStreamBytes(MemoryStream bytes);
         byte[] FrameText(string text);
         byte[] FrameByteText(byte[] text);
         byte[] FrameBinary(byte[] bytes);

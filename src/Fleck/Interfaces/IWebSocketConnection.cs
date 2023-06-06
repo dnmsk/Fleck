@@ -16,8 +16,8 @@ namespace Fleck
         Task Send(string message);
         Task Send(byte[] message);
         Task SendTextAsByte(byte[] message);
-        Task SendStreamText(Stream stream);
-        Task SendStreamBytes(Stream stream);
+        Task SendStreamText(MemoryStream stream);
+        Task SendStreamBytes(MemoryStream stream);
         Task SendPing(byte[] message);
         Task SendPong(byte[] message);
         void Close();

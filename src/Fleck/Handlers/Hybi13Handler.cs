@@ -51,26 +51,27 @@ namespace Fleck.Handlers
             return memoryStream.ToArray();
         }
 
-        public static Stream FrameData(Stream payload, FrameType frameType)
+        public static MemoryStream FrameData(MemoryStream payload, FrameType frameType)
         {
             var memoryStream = new MemoryStream();
             byte op = (byte)((byte)frameType + 128);
 
             memoryStream.WriteByte(op);
 
-            if (payload.Length > UInt16.MaxValue) {
+            var payloadLength = (int) payload.Length;
+            if (payloadLength > ushort.MaxValue) {
                 memoryStream.WriteByte(127);
-                var lengthBytes = ((int) payload.Length).ToBigEndianBytes<ulong>();
+                var lengthBytes = payloadLength.ToBigEndianBytes<ulong>();
                 memoryStream.Write(lengthBytes, 0, lengthBytes.Length);
-            } else if (payload.Length > 125) {
+            } else if (payloadLength > 125) {
                 memoryStream.WriteByte(126);
-                var lengthBytes = ((int) payload.Length).ToBigEndianBytes<ushort>();
+                var lengthBytes = payloadLength.ToBigEndianBytes<ushort>();
                 memoryStream.Write(lengthBytes, 0, lengthBytes.Length);
             } else {
-                memoryStream.WriteByte((byte)payload.Length);
+                memoryStream.WriteByte((byte)payloadLength);
             }
 
-            payload.CopyTo(memoryStream);
+            memoryStream.Write(payload.GetBuffer(), default, payloadLength);
             memoryStream.Seek(0, SeekOrigin.Begin);
 
             return memoryStream;
